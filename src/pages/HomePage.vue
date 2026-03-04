@@ -387,10 +387,10 @@ function getCategoryIcon(categoryName: string) {
                   <span class="bill-amount">¥{{ bill.amount.toFixed(2) }}</span>
                 </div>
                 <div class="bill-meta">
-                  <span class="bill-payer" :class="{ me: bill.isMyBill, partner: !bill.isMyBill }">
-                    {{ bill.isMyBill ? '我' : partner?.name || '对方' }}支付
+                  <span class="bill-payer" :class="{ me: bill.is_my_bill, partner: !bill.is_my_bill }">
+                    {{ bill.is_my_bill ? '我' : partner?.name || '对方' }}支付
                   </span>
-                  <span class="bill-date">{{ formatDate(bill.createdAt) }}</span>
+                  <span class="bill-date">{{ formatDate(bill.created_at) }}</span>
                 </div>
               </div>
 
