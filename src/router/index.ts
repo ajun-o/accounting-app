@@ -40,6 +40,16 @@ const router = createRouter({
 
 // 简化的路由守卫
 router.beforeEach(async (to, from, next) => {
+  // 如果是重置密码页面，且有access_token在URL中，直接放行
+  // 因为Supabase需要从URL hash中解析token
+  if (to.path === '/reset-password' && typeof window !== 'undefined') {
+    const hash = window.location.hash;
+    if (hash.includes('access_token') || hash.includes('type=recovery')) {
+      next();
+      return;
+    }
+  }
+
   // 延迟加载 useUserStore
   const { useUserStore } = await import('@/stores/user')
   const userStore = useUserStore()

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
+import { supabase } from '@/utils/supabase';
 import { 
   LockClosedIcon,
   EyeIcon,
@@ -18,16 +19,43 @@ const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const errors = ref<Record<string, string>>({});
 const isSuccess = ref(false);
+const isValidLink = ref(false);
+const isChecking = ref(true);
 
 const isLoading = userStore.isLoading;
 const error = userStore.error;
 
+let authSubscription: any = null;
+
 onMounted(() => {
-  // 检查URL中是否有access_token（从邮箱链接跳转过来）
+  // 监听认证状态变化，处理密码恢复
+  authSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      // 密码恢复链接有效
+      isValidLink.value = true;
+      isChecking.value = false;
+    } else if (event === 'SIGNED_IN' && session) {
+      // 用户已通过其他方式登录
+      isValidLink.value = true;
+      isChecking.value = false;
+    }
+  });
+
+  // 检查当前URL是否有token
   const hash = window.location.hash;
-  if (!hash.includes('access_token')) {
-    // 如果没有token，重定向到登录页
-    router.push('/login');
+  if (!hash.includes('access_token') && !hash.includes('type=recovery')) {
+    // 如果没有token，延迟检查，因为Supabase可能需要时间解析hash
+    setTimeout(() => {
+      if (!isValidLink.value) {
+        isChecking.value = false;
+      }
+    }, 2000);
+  }
+});
+
+onUnmounted(() => {
+  if (authSubscription) {
+    authSubscription.data.subscription.unsubscribe();
   }
 });
 
@@ -84,7 +112,28 @@ async function handleSubmit() {
       
       <!-- 卡片 -->
       <div class="reset-card">
-        <template v-if="isSuccess">
+        <!-- 检查中 -->
+        <template v-if="isChecking">
+          <div class="checking-state">
+            <div class="spinner-large"></div>
+            <p class="checking-text">正在验证链接...</p>
+          </div>
+        </template>
+        
+        <!-- 链接无效 -->
+        <template v-else-if="!isValidLink">
+          <div class="invalid-state">
+            <div class="invalid-icon">✕</div>
+            <h2 class="invalid-title">链接无效或已过期</h2>
+            <p class="invalid-text">重置密码链接可能已过期，请重新请求</p>
+            <button class="submit-btn" @click="router.push('/login')">
+              返回登录页
+            </button>
+          </div>
+        </template>
+        
+        <!-- 重置成功 -->
+        <template v-else-if="isSuccess">
           <div class="success-state">
             <div class="success-icon">✓</div>
             <h2 class="success-title">密码重置成功</h2>
@@ -96,6 +145,7 @@ async function handleSubmit() {
           </div>
         </template>
         
+        <!-- 重置表单 -->
         <template v-else>
           <h2 class="card-title">设置新密码</h2>
           <p class="card-subtitle">请输入您的新密码</p>
@@ -441,6 +491,62 @@ async function handleSubmit() {
 .success-hint {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+/* 检查中状态 */
+.checking-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 20px;
+}
+
+.spinner-large {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.checking-text {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 链接无效状态 */
+.invalid-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0;
+}
+
+.invalid-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: white;
+}
+
+.invalid-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+}
+
+.invalid-text {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
   text-align: center;
 }
 </style>
