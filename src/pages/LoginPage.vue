@@ -16,6 +16,9 @@ const userStore = useUserStore();
 
 const isLogin = ref(true);
 const showPassword = ref(false);
+const showForgotPassword = ref(false);
+const resetEmail = ref('');
+const resetSuccess = ref(false);
 
 const form = ref({
   email: '',
@@ -77,8 +80,41 @@ async function handleSubmit() {
 
 function toggleMode() {
   isLogin.value = !isLogin.value;
+  showForgotPassword.value = false;
   errors.value = {};
   userStore.error = null;
+}
+
+function showForgotPasswordForm() {
+  showForgotPassword.value = true;
+  resetSuccess.value = false;
+  resetEmail.value = '';
+  errors.value = {};
+  userStore.error = null;
+}
+
+function backToLogin() {
+  showForgotPassword.value = false;
+  resetSuccess.value = false;
+  errors.value = {};
+  userStore.error = null;
+}
+
+async function handleResetPassword() {
+  errors.value = {};
+  
+  if (!resetEmail.value) {
+    errors.value.email = '请输入邮箱';
+    return;
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail.value)) {
+    errors.value.email = '请输入有效的邮箱地址';
+    return;
+  }
+  
+  const success = await userStore.resetPassword(resetEmail.value);
+  if (success) {
+    resetSuccess.value = true;
+  }
 }
 </script>
 
@@ -103,12 +139,71 @@ function toggleMode() {
       
       <!-- 表单卡片 -->
       <div class="login-card">
-        <h2 class="card-title">{{ isLogin ? '欢迎回来' : '创建账号' }}</h2>
-        <p class="card-subtitle">
-          {{ isLogin ? '登录以继续管理你们的账单' : '开始你们共同的记账之旅' }}
-        </p>
+        <!-- 忘记密码表单 -->
+        <template v-if="showForgotPassword">
+          <h2 class="card-title">重置密码</h2>
+          <p class="card-subtitle">
+            {{ resetSuccess ? '请检查您的邮箱' : '输入您的邮箱以接收重置链接' }}
+          </p>
+          
+          <div v-if="resetSuccess" class="reset-success">
+            <div class="success-icon">✓</div>
+            <p class="success-text">
+              重置密码链接已发送到 <strong>{{ resetEmail }}</strong>
+            </p>
+            <p class="success-hint">请检查您的邮箱并点击链接重置密码</p>
+            <button type="button" class="submit-btn" @click="backToLogin">
+              返回登录
+            </button>
+          </div>
+          
+          <form v-else class="login-form" @submit.prevent="handleResetPassword">
+            <!-- 邮箱 -->
+            <div class="form-group">
+              <label class="form-label">
+                <EnvelopeIcon class="w-4 h-4" />
+                <span>邮箱</span>
+              </label>
+              <input
+                v-model="resetEmail"
+                type="email"
+                placeholder="请输入邮箱地址"
+                class="form-input"
+                :class="{ error: errors.email }"
+              />
+              <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
+            </div>
+            
+            <!-- 错误提示 -->
+            <div v-if="error" class="form-error">
+              {{ error }}
+            </div>
+            
+            <!-- 提交按钮 -->
+            <button
+              type="submit"
+              class="submit-btn"
+              :disabled="isLoading"
+            >
+              <span v-if="!isLoading">发送重置链接</span>
+              <span v-else class="spinner"></span>
+            </button>
+            
+            <!-- 返回登录 -->
+            <button type="button" class="back-btn" @click="backToLogin">
+              ← 返回登录
+            </button>
+          </form>
+        </template>
         
-        <form class="login-form" @submit.prevent="handleSubmit">
+        <!-- 登录/注册表单 -->
+        <template v-else>
+          <h2 class="card-title">{{ isLogin ? '欢迎回来' : '创建账号' }}</h2>
+          <p class="card-subtitle">
+            {{ isLogin ? '登录以继续管理你们的账单' : '开始你们共同的记账之旅' }}
+          </p>
+          
+          <form class="login-form" @submit.prevent="handleSubmit">
           <!-- 昵称（仅注册） -->
           <div v-if="!isLogin" class="form-group">
             <label class="form-label">
@@ -165,6 +260,12 @@ function toggleMode() {
               </button>
             </div>
             <span v-if="errors.password" class="error-text">{{ errors.password }}</span>
+            <!-- 忘记密码链接 -->
+            <div v-if="isLogin" class="forgot-password">
+              <button type="button" class="forgot-btn" @click="showForgotPasswordForm">
+                忘记密码？
+              </button>
+            </div>
           </div>
           
           <!-- 错误提示 -->
@@ -183,13 +284,14 @@ function toggleMode() {
           </button>
         </form>
         
-        <!-- 切换模式 -->
-        <div class="form-footer">
-          <span>{{ isLogin ? '还没有账号？' : '已有账号？' }}</span>
-          <button type="button" class="toggle-btn" @click="toggleMode">
-            {{ isLogin ? '立即注册' : '立即登录' }}
-          </button>
-        </div>
+          <!-- 切换模式 -->
+          <div class="form-footer">
+            <span>{{ isLogin ? '还没有账号？' : '已有账号？' }}</span>
+            <button type="button" class="toggle-btn" @click="toggleMode">
+              {{ isLogin ? '立即注册' : '立即登录' }}
+            </button>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -455,5 +557,79 @@ function toggleMode() {
 
 .toggle-btn:hover {
   color: #818cf8;
+}
+
+/* 忘记密码 */
+.forgot-password {
+  text-align: right;
+  margin-top: 6px;
+}
+
+.forgot-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.forgot-btn:hover {
+  color: #6366f1;
+}
+
+/* 返回按钮 */
+.back-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  text-align: center;
+}
+
+.back-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 重置成功 */
+.reset-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #34d399);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: white;
+}
+
+.success-text {
+  font-size: 16px;
+  color: white;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.success-text strong {
+  color: #6366f1;
+}
+
+.success-hint {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
 }
 </style>

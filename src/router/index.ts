@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '@/pages/HomePage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import CoupleSetupPage from '@/pages/CoupleSetupPage.vue'
+import ResetPasswordPage from '@/pages/ResetPasswordPage.vue'
 
 // 定义路由配置
 const routes = [
@@ -22,6 +23,12 @@ const routes = [
     name: 'couple-setup',
     component: CoupleSetupPage,
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: ResetPasswordPage,
+    meta: { guest: true },
   },
 ]
 

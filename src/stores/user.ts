@@ -285,6 +285,46 @@ export const useUserStore = defineStore('user', () => {
     error.value = null
   }
 
+  async function resetPassword(email: string) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      
+      if (resetError) throw resetError
+      
+      return true
+    } catch (err: any) {
+      error.value = err.message || '发送重置邮件失败'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function updatePassword(newPassword: string) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
+      
+      if (updateError) throw updateError
+      
+      return true
+    } catch (err: any) {
+      error.value = err.message || '更新密码失败'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     user,
     partner,
@@ -301,5 +341,7 @@ export const useUserStore = defineStore('user', () => {
     createCouple,
     joinCouple,
     leaveCouple,
+    resetPassword,
+    updatePassword,
   }
 })
