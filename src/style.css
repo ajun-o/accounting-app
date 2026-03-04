@@ -1,0 +1,291 @@
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400,300&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* iOS 风格色彩系统 - 深色模式为主 */
+    --ios-bg-primary: #000000;
+    --ios-bg-secondary: #1c1c1e;
+    --ios-bg-tertiary: #2c2c2e;
+    --ios-bg-elevated: #1c1c1e;
+
+    /* 品牌色 - 柔和的靛蓝 */
+    --ios-brand: #6366f1;
+    --ios-brand-light: #818cf8;
+    --ios-brand-dark: #4f46e5;
+
+    /* 辅助色 */
+    --ios-blue: #0a84ff;
+    --ios-green: #30d158;
+    --ios-orange: #ff9f0a;
+    --ios-pink: #ff375f;
+    --ios-purple: #bf5af2;
+    --ios-red: #ff453a;
+    --ios-teal: #64d2ff;
+    --ios-yellow: #ffd60a;
+
+    /* 文字颜色 */
+    --ios-label-primary: #ffffff;
+    --ios-label-secondary: rgba(255, 255, 255, 0.6);
+    --ios-label-tertiary: rgba(255, 255, 255, 0.3);
+    --ios-label-quaternary: rgba(255, 255, 255, 0.18);
+
+    /* 分隔线 */
+    --ios-separator: rgba(255, 255, 255, 0.1);
+    --ios-separator-opaque: #38383a;
+
+    /* 填充色 */
+    --ios-fill-primary: rgba(120, 120, 128, 0.24);
+    --ios-fill-secondary: rgba(120, 120, 128, 0.16);
+    --ios-fill-tertiary: rgba(118, 118, 128, 0.12);
+
+    /* 圆角系统 */
+    --ios-radius-sm: 8px;
+    --ios-radius-md: 12px;
+    --ios-radius-lg: 16px;
+    --ios-radius-xl: 20px;
+    --ios-radius-2xl: 24px;
+    --ios-radius-full: 9999px;
+
+    /* 阴影 */
+    --ios-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --ios-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --ios-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+    /* 模糊 */
+    --ios-blur: saturate(180%) blur(20px);
+  }
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  background-color: var(--ios-bg-primary);
+  color: var(--ios-label-primary);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* iOS 风格滚动条 */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* 玻璃态效果 - iOS 风格 */
+.ios-glass {
+  background: rgba(28, 28, 30, 0.72);
+  backdrop-filter: var(--ios-blur);
+  -webkit-backdrop-filter: var(--ios-blur);
+}
+
+.ios-glass-light {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: var(--ios-blur);
+  -webkit-backdrop-filter: var(--ios-blur);
+}
+
+/* iOS 风格卡片 */
+.ios-card {
+  background: var(--ios-bg-secondary);
+  border-radius: var(--ios-radius-xl);
+  border: 0.5px solid var(--ios-separator);
+}
+
+.ios-card-elevated {
+  background: linear-gradient(145deg, rgba(44, 44, 46, 0.8), rgba(28, 28, 30, 0.9));
+  border-radius: var(--ios-radius-xl);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* iOS 风格按钮 */
+.ios-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  font-size: 17px;
+  font-weight: 500;
+  border-radius: var(--ios-radius-full);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.ios-button:active {
+  transform: scale(0.96);
+}
+
+.ios-button-primary {
+  background: var(--ios-brand);
+  color: white;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.4);
+}
+
+.ios-button-secondary {
+  background: var(--ios-fill-primary);
+  color: var(--ios-label-primary);
+}
+
+/* iOS 风格输入 */
+.ios-input {
+  background: var(--ios-fill-primary);
+  border: none;
+  border-radius: var(--ios-radius-md);
+  padding: 12px 16px;
+  font-size: 17px;
+  color: var(--ios-label-primary);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.ios-input:focus {
+  background: var(--ios-fill-secondary);
+  box-shadow: 0 0 0 2px var(--ios-brand-light);
+}
+
+/* 渐变文字 */
+.gradient-text {
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-brand {
+  background: linear-gradient(135deg, var(--ios-brand-light) 0%, var(--ios-brand) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 动画关键帧 */
+@keyframes ios-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ios-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ios-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ios-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes ios-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes ios-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes ios-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.5);
+  }
+}
+
+/* 动画类 */
+.animate-ios-slide-up {
+  animation: ios-slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-ios-fade-in {
+  animation: ios-fade-in 0.3s ease forwards;
+}
+
+.animate-ios-scale-in {
+  animation: ios-scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-ios-pulse {
+  animation: ios-pulse 2s ease-in-out infinite;
+}
+
+.animate-ios-bounce {
+  animation: ios-bounce 2s ease-in-out infinite;
+}
+
+.animate-ios-glow {
+  animation: ios-glow 2s ease-in-out infinite;
+}
+
+/* 列表项动画延迟 */
+.list-item-1 { animation-delay: 0.05s; }
+.list-item-2 { animation-delay: 0.1s; }
+.list-item-3 { animation-delay: 0.15s; }
+.list-item-4 { animation-delay: 0.2s; }
+.list-item-5 { animation-delay: 0.25s; }
+.list-item-6 { animation-delay: 0.3s; }
+
+/* 过渡效果 */
+.ios-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ios-transition-fast {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 安全区域适配 */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* 禁用选择 */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 硬件加速 */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
