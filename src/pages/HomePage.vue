@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
@@ -24,7 +24,7 @@ const router = useRouter();
 const userStore = useUserStore();
 const billsStore = useBillsStore();
 
-// 状态
+// 鐘舵€?
 const isPanelOpen = ref(false);
 const isVoicePanelOpen = ref(false);
 const newAmountStr = ref('0');
@@ -34,20 +34,22 @@ const editingBill = ref<any | null>(null);
 const isSubmitting = ref(false);
 const billsLoaded = ref(false);
 const isRecording = ref(false);
+const selectedTransactionType = ref<'expense' | 'income'>('expense');
 
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
 
-// 分类数据
+// 鍒嗙被鏁版嵁
 const categories = [
-  { name: '餐饮', icon: FireIcon, color: '#ff9f0a' },
-  { name: '购物', icon: ShoppingBagIcon, color: '#bf5af2' },
-  { name: '交通', icon: TruckIcon, color: '#0a84ff' },
-  { name: '娱乐', icon: BuildingStorefrontIcon, color: '#30d158' },
+  { name: 'Food', icon: FireIcon, color: '#ff9f0a' },
+  { name: 'Shopping', icon: ShoppingBagIcon, color: '#bf5af2' },
+  { name: 'Transport', icon: TruckIcon, color: '#0a84ff' },
+  { name: 'Entertainment', icon: BuildingStorefrontIcon, color: '#30d158' },
 ];
+const incomeCategory = { name: 'Income', icon: WalletIcon, color: '#30d158' };
 const selectedCategory = ref(categories[0]);
 
-// 计算属性
+// 璁＄畻灞炴€?
 const user = computed(() => userStore.user);
 const partner = computed(() => userStore.partner);
 const couple = computed(() => userStore.couple);
@@ -55,6 +57,8 @@ const recentBills = computed(() => billsStore.recentBills);
 const stats = computed(() => billsStore.stats);
 
 const totalExpenditure = computed(() => billsStore.totalExpenditure);
+const totalIncome = computed(() => billsStore.totalIncome);
+const netBalance = computed(() => billsStore.netBalance);
 const myExpenditure = computed(() => billsStore.myExpenditure);
 const partnerExpenditure = computed(() => billsStore.partnerExpenditure);
 
@@ -79,9 +83,9 @@ const formattedAmount = computed(() =>
 
 const keypad = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'];
 
-// 生命周期
+// 鐢熷懡鍛ㄦ湡
 onMounted(async () => {
-  // 检查安装提示
+  // 妫€鏌ュ畨瑁呮彁绀?
   if (localStorage.getItem('installPromptDismissed') !== 'true') {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     if (!isStandalone) {
@@ -91,13 +95,13 @@ onMounted(async () => {
     }
   }
 
-  // 加载账单数据
+  // 鍔犺浇璐﹀崟鏁版嵁
   await billsStore.refresh();
   billsLoaded.value = true;
   displayTotalExpenditure.value = totalExpenditure.value;
 });
 
-// 监听总额变化，添加动画
+// 鐩戝惉鎬婚鍙樺寲锛屾坊鍔犲姩鐢?
 let animationFrame: number | null = null;
 watch(totalExpenditure, (newValue) => {
   if (animationFrame) cancelAnimationFrame(animationFrame);
@@ -122,7 +126,7 @@ watch(totalExpenditure, (newValue) => {
   animationFrame = requestAnimationFrame(animate);
 });
 
-// 方法
+// 鏂规硶
 function dismissInstallPrompt() {
   showInstallPrompt.value = false;
   localStorage.setItem('installPromptDismissed', 'true');
@@ -170,14 +174,14 @@ async function toggleRecording() {
 
     mediaRecorder.onstop = () => {
       const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-      console.log('录音完成', audioBlob);
+      console.log('褰曢煶瀹屾垚', audioBlob);
       isRecording.value = false;
       isVoicePanelOpen.value = false;
     };
 
     mediaRecorder.start();
   } catch (err) {
-    console.error('麦克风权限获取失败:', err);
+    console.error('楹﹀厠椋庢潈闄愯幏鍙栧け璐?', err);
     isRecording.value = false;
   }
 }
@@ -207,24 +211,34 @@ async function handleTransactionSubmit() {
     return;
   }
 
+  const signedAmount = selectedTransactionType.value === 'income'
+    ? -Math.abs(amount)
+    : Math.abs(amount);
+  const description = selectedTransactionType.value === 'income'
+    ? incomeCategory.name
+    : selectedCategory.value.name;
+  const category = selectedTransactionType.value === 'income'
+    ? incomeCategory.name
+    : selectedCategory.value.name;
+
   isSubmitting.value = true;
 
   try {
     if (editingBill.value) {
       await billsStore.updateBill(editingBill.value.id, {
-        amount,
-        description: selectedCategory.value.name,
-        category: selectedCategory.value.name,
+        amount: signedAmount,
+        description,
+        category,
       });
     } else {
       await billsStore.createBill({
-        amount,
-        description: selectedCategory.value.name,
-        category: selectedCategory.value.name,
+        amount: signedAmount,
+        description,
+        category,
       });
     }
   } catch (error) {
-    console.error('保存账单失败:', error);
+    console.error('淇濆瓨璐﹀崟澶辫触:', error);
   }
 
   isSubmitting.value = false;
@@ -235,6 +249,7 @@ function closePanel() {
   isPanelOpen.value = false;
   newAmountStr.value = '0';
   selectedCategory.value = categories[0];
+  selectedTransactionType.value = 'expense';
   editingBill.value = null;
 }
 
@@ -243,13 +258,14 @@ async function deleteBill(id: string) {
     await billsStore.deleteBill(id);
     openedMenuBillId.value = null;
   } catch (error) {
-    console.error('删除账单失败:', error);
+    console.error('鍒犻櫎璐﹀崟澶辫触:', error);
   }
 }
 
 function startEditing(bill: any) {
   editingBill.value = bill;
-  newAmountStr.value = bill.amount.toString();
+  selectedTransactionType.value = bill.amount < 0 ? 'income' : 'expense';
+  newAmountStr.value = Math.abs(bill.amount).toString();
   selectedCategory.value = categories.find(c => c.name === bill.category) || categories[0];
   openedMenuBillId.value = null;
   isPanelOpen.value = true;
@@ -261,9 +277,9 @@ function formatDate(timestamp: string): string {
   const diff = now.getTime() - date.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-  if (days === 0) return '今天';
-  if (days === 1) return '昨天';
-  if (days < 7) return `${days}天前`;
+  if (days === 0) return '浠婂ぉ';
+  if (days === 1) return '鏄ㄥぉ';
+  if (days < 7) return `${days}澶╁墠`;
 
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 }
@@ -275,31 +291,36 @@ function getCategoryColor(categoryName: string): string {
 function getCategoryIcon(categoryName: string) {
   return categories.find(c => c.name === categoryName)?.icon || FireIcon;
 }
+
+function formatSignedAmount(amount: number): string {
+  const absAmount = Math.abs(amount).toFixed(2);
+  return amount < 0 ? `+${absAmount}` : `-${absAmount}`;
+}
 </script>
 
 <template>
   <div class="app-container">
-    <!-- 背景渐变 -->
+    <!-- 鑳屾櫙娓愬彉 -->
     <div class="ambient-bg">
       <div class="ambient-blob blob-1"></div>
       <div class="ambient-blob blob-2"></div>
       <div class="ambient-blob blob-3"></div>
     </div>
 
-    <!-- 主内容区 -->
+    <!-- 涓诲唴瀹瑰尯 -->
     <main class="main-content" :class="{ 'panel-open': isPanelOpen || isVoicePanelOpen }">
-      <!-- 顶部标题 -->
+      <!-- 椤堕儴鏍囬 -->
       <header class="page-header animate-ios-slide-up">
         <div class="header-left">
           <div class="header-icon">
             <WalletIcon class="w-6 h-6" />
           </div>
           <div class="header-info">
-            <h1 class="header-title">{{ couple?.name || '共同记账' }}</h1>
+            <h1 class="header-title">{{ couple?.name || '鍏卞悓璁拌处' }}</h1>
             <div class="header-users" v-if="user">
               <span class="user-badge me">{{ user.name }}</span>
               <span v-if="partner" class="user-badge partner">{{ partner.name }}</span>
-              <span v-else class="user-badge waiting">等待加入</span>
+              <span v-else class="user-badge waiting">绛夊緟鍔犲叆</span>
             </div>
           </div>
         </div>
@@ -308,25 +329,29 @@ function getCategoryIcon(categoryName: string) {
         </button>
       </header>
 
-      <!-- 总支出卡片 -->
+      <!-- 鎬绘敮鍑哄崱鐗?-->
       <section class="total-card animate-ios-slide-up" style="animation-delay: 0.05s">
-        <div class="total-label">本月总支出</div>
+        <div class="total-label">Monthly Expense</div>
         <div class="total-amount">
-          <span class="currency">¥</span>
+          <span class="currency">楼</span>
           <span class="amount">{{ displayTotalExpenditure.toFixed(2) }}</span>
+        </div>
+        <div class="total-meta">
+          <span class="meta-income">Income +¥{{ totalIncome.toFixed(2) }}</span>
+          <span class="meta-balance">Balance ¥{{ netBalance.toFixed(2) }}</span>
         </div>
         <div class="total-decoration"></div>
       </section>
 
-      <!-- 支出比例 -->
+      <!-- 鏀嚭姣斾緥 -->
       <section class="ratio-card animate-ios-slide-up" style="animation-delay: 0.1s">
         <div class="ratio-header">
           <div class="ratio-person" :class="{ active: myPercentage >= partnerPercentage }">
             <div class="person-avatar" style="--avatar-color: #6366f1">
-              <span>{{ user?.name?.charAt(0) || '我' }}</span>
+              <span>{{ user?.name?.charAt(0) || 'M' }}</span>
             </div>
             <div class="person-info">
-              <span class="person-name">{{ user?.name || '我' }}</span>
+              <span class="person-name">{{ user?.name || 'Me' }}</span>
               <span class="person-percent">{{ myPercentage.toFixed(0) }}%</span>
             </div>
           </div>
@@ -336,7 +361,7 @@ function getCategoryIcon(categoryName: string) {
               <span>{{ partner?.name?.charAt(0) || '?' }}</span>
             </div>
             <div class="person-info">
-              <span class="person-name">{{ partner?.name || '对方' }}</span>
+              <span class="person-name">{{ partner?.name || 'Partner' }}</span>
               <span class="person-percent">{{ partnerPercentage.toFixed(0) }}%</span>
             </div>
           </div>
@@ -350,19 +375,19 @@ function getCategoryIcon(categoryName: string) {
         </div>
 
         <div class="ratio-amounts">
-          <span class="amount-a">¥{{ myExpenditure.toFixed(2) }}</span>
-          <span class="amount-b">¥{{ partnerExpenditure.toFixed(2) }}</span>
+          <span class="amount-a">楼{{ myExpenditure.toFixed(2) }}</span>
+          <span class="amount-b">楼{{ partnerExpenditure.toFixed(2) }}</span>
         </div>
       </section>
 
-      <!-- 最近账单 -->
+      <!-- 鏈€杩戣处鍗?-->
       <section class="bills-section animate-ios-slide-up" style="animation-delay: 0.15s">
         <div class="section-header">
           <div class="section-title">
             <ChartPieIcon class="w-5 h-5" />
-            <span>最近账单</span>
+            <span>Recent Bills</span>
           </div>
-          <span class="bill-count">{{ recentBills.length }} 笔</span>
+          <span class="bill-count">{{ recentBills.length }} items</span>
         </div>
 
         <div class="bills-list" v-if="billsLoaded">
@@ -384,11 +409,11 @@ function getCategoryIcon(categoryName: string) {
               <div class="bill-content">
                 <div class="bill-main">
                   <span class="bill-title">{{ bill.description }}</span>
-                  <span class="bill-amount">¥{{ bill.amount.toFixed(2) }}</span>
+                  <span class="bill-amount" :class="{ income: bill.amount < 0, expense: bill.amount >= 0 }">{{ formatSignedAmount(bill.amount) }}</span>
                 </div>
                 <div class="bill-meta">
                   <span class="bill-payer" :class="{ me: bill.is_my_bill, partner: !bill.is_my_bill }">
-                    {{ bill.is_my_bill ? '我' : partner?.name || '对方' }}支付
+                    {{ bill.is_my_bill ? 'Me' : (partner?.name || 'Partner') }} paid
                   </span>
                   <span class="bill-date">{{ formatDate(bill.created_at) }}</span>
                 </div>
@@ -418,8 +443,8 @@ function getCategoryIcon(categoryName: string) {
             <div class="empty-icon">
               <WalletIcon class="w-12 h-12" />
             </div>
-            <p class="empty-text">还没有账单</p>
-            <p class="empty-subtext">点击右下角按钮添加第一笔</p>
+            <p class="empty-text">No bills yet</p>
+            <p class="empty-subtext">Tap the button to add your first record</p>
           </div>
         </div>
 
@@ -435,7 +460,7 @@ function getCategoryIcon(categoryName: string) {
       </section>
     </main>
 
-    <!-- 悬浮按钮 -->
+    <!-- 鎮诞鎸夐挳 -->
     <div class="fab-wrapper">
       <button
         class="fab"
@@ -449,10 +474,10 @@ function getCategoryIcon(categoryName: string) {
           <PlusIcon class="w-8 h-8" />
         </div>
       </button>
-      <span class="fab-hint">长按语音</span>
+      <span class="fab-hint">闀挎寜璇煶</span>
     </div>
 
-    <!-- 记账面板 -->
+    <!-- 璁拌处闈㈡澘 -->
     <Transition name="panel">
       <div v-if="isPanelOpen" class="panel-overlay">
         <div class="panel-backdrop" @click="closePanel"></div>
@@ -462,11 +487,28 @@ function getCategoryIcon(categoryName: string) {
           </div>
 
           <div class="amount-display">
-            <span class="amount-currency">¥</span>
+            <span class="amount-currency">楼</span>
             <span class="amount-value">{{ formattedAmount }}</span>
           </div>
 
-          <div class="category-selector">
+                    <div class="type-switch">
+            <button
+              class="type-btn"
+              :class="{ active: selectedTransactionType === 'expense' }"
+              @click="selectedTransactionType = 'expense'"
+            >
+              支出
+            </button>
+            <button
+              class="type-btn"
+              :class="{ active: selectedTransactionType === 'income' }"
+              @click="selectedTransactionType = 'income'"
+            >
+              收入
+            </button>
+          </div>
+
+          <div v-if="selectedTransactionType === 'expense'" class="category-selector">
             <button
               v-for="category in categories"
               :key="category.name"
@@ -495,26 +537,26 @@ function getCategoryIcon(categoryName: string) {
           </div>
 
           <button class="submit-btn" :disabled="isSubmitting" @click="handleTransactionSubmit">
-            <span v-if="!isSubmitting">{{ editingBill ? '保存修改' : '确认记账' }}</span>
+            <span v-if="!isSubmitting">{{ editingBill ? '淇濆瓨淇敼' : '纭璁拌处' }}</span>
             <span v-else class="spinner"></span>
           </button>
         </div>
       </div>
     </Transition>
 
-    <!-- 语音面板 -->
+    <!-- 璇煶闈㈡澘 -->
     <Transition name="voice">
       <div v-if="isVoicePanelOpen" class="voice-overlay">
         <div class="voice-backdrop" @click="isVoicePanelOpen = false"></div>
         <div class="voice-content">
-          <p class="voice-hint">{{ isRecording ? '正在聆听...' : '点击开始录音' }}</p>
+          <p class="voice-hint">{{ isRecording ? 'Listening...' : 'Tap to start recording' }}</p>
           <button class="voice-btn" :class="{ recording: isRecording }" @click="toggleRecording">
             <div class="voice-btn-ring"></div>
             <div class="voice-btn-inner">
               <MicrophoneIcon class="w-10 h-10" />
             </div>
           </button>
-          <p class="voice-status">{{ isRecording ? '说出消费内容' : '准备就绪' }}</p>
+          <p class="voice-status">{{ isRecording ? '璇村嚭娑堣垂鍐呭' : '鍑嗗灏辩华' }}</p>
           <button class="voice-close" @click="isVoicePanelOpen = false">
             <XMarkIcon class="w-6 h-6" />
           </button>
@@ -695,6 +737,23 @@ function getCategoryIcon(categoryName: string) {
   letter-spacing: -1px;
 }
 
+.total-meta {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.meta-income {
+  color: #34d399;
+}
+
+.meta-balance {
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .ratio-card {
   background: rgba(28, 28, 30, 0.6);
   backdrop-filter: blur(20px);
@@ -869,6 +928,14 @@ function getCategoryIcon(categoryName: string) {
   font-size: 16px;
   font-weight: 700;
   color: white;
+}
+
+.bill-amount.expense {
+  color: #fb7185;
+}
+
+.bill-amount.income {
+  color: #34d399;
 }
 
 .bill-meta {
@@ -1082,6 +1149,29 @@ function getCategoryIcon(categoryName: string) {
   letter-spacing: -1px;
 }
 
+.type-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.type-btn {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.75);
+  border-radius: 12px;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.type-btn.active {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.45);
+  color: #c7d2fe;
+}
+
 .category-selector {
   display: flex;
   gap: 12px;
@@ -1267,3 +1357,6 @@ function getCategoryIcon(categoryName: string) {
   }
 }
 </style>
+
+
+

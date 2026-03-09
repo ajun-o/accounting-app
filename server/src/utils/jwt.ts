@@ -1,7 +1,15 @@
 import jwt from 'jsonwebtoken';
 import type { JWTPayload } from '../types';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('Missing JWT_SECRET. Set JWT_SECRET in the server environment before startup.');
+  }
+  return secret;
+}
+
+const JWT_SECRET = getJwtSecret();
 const JWT_EXPIRES_IN = '7d';
 
 export function generateToken(payload: JWTPayload): string {
@@ -10,7 +18,13 @@ export function generateToken(payload: JWTPayload): string {
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (typeof decoded === 'string') return null;
+    if (typeof decoded.userId !== 'string' || typeof decoded.email !== 'string') return null;
+    return {
+      userId: decoded.userId,
+      email: decoded.email,
+    };
   } catch {
     return null;
   }

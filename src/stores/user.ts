@@ -259,12 +259,36 @@ export const useUserStore = defineStore('user', () => {
       if (!user.value || !couple.value) return false
       
       // 删除情侣空间（或者根据业务逻辑处理）
-      const { error: deleteError } = await supabase
-        .from('couples')
-        .delete()
-        .eq('id', couple.value.id)
-      
-      if (deleteError) throw deleteError
+      if (couple.value.user2Id === user.value.id) {
+        const { error: updateError } = await supabase
+          .from('couples')
+          .update({ user2_id: null })
+          .eq('id', couple.value.id)
+          .eq('user2_id', user.value.id)
+
+        if (updateError) throw updateError
+      } else if (couple.value.user1Id === user.value.id && couple.value.user2Id) {
+        const { error: updateError } = await supabase
+          .from('couples')
+          .update({
+            user1_id: couple.value.user2Id,
+            user2_id: null,
+          })
+          .eq('id', couple.value.id)
+          .eq('user1_id', user.value.id)
+
+        if (updateError) throw updateError
+      } else if (couple.value.user1Id === user.value.id && !couple.value.user2Id) {
+        const { error: deleteError } = await supabase
+          .from('couples')
+          .delete()
+          .eq('id', couple.value.id)
+          .eq('user1_id', user.value.id)
+
+        if (deleteError) throw deleteError
+      } else {
+        throw new Error('Current user is not a member of this couple')
+      }
       
       couple.value = null
       partner.value = null

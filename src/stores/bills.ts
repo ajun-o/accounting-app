@@ -33,18 +33,28 @@ export const useBillsStore = defineStore('bills', () => {
   const recentBills = computed(() => bills.value.slice(0, 50))
   
   const totalExpenditure = computed(() => 
-    stats.value?.totalAmount || bills.value.reduce((sum, b) => sum + b.amount, 0)
+    stats.value?.totalAmount || bills.value.reduce((sum, b) => sum + (b.amount > 0 ? b.amount : 0), 0)
   )
+
+  const totalIncome = computed(() =>
+    bills.value.reduce((sum, b) => sum + (b.amount < 0 ? Math.abs(b.amount) : 0), 0)
+  )
+
+  const netBalance = computed(() => totalIncome.value - totalExpenditure.value)
   
   const myExpenditure = computed(() => {
     const userStore = useUserStore()
     return stats.value?.myAmount || 
-      bills.value.filter(b => b.payer_id === userStore.user?.id).reduce((sum, b) => sum + b.amount, 0)
+      bills.value
+        .filter(b => b.payer_id === userStore.user?.id && b.amount > 0)
+        .reduce((sum, b) => sum + b.amount, 0)
   })
   
   const partnerExpenditure = computed(() => 
     stats.value?.partnerAmount || 
-    bills.value.filter(b => b.payer_id !== useUserStore().user?.id).reduce((sum, b) => sum + b.amount, 0)
+    bills.value
+      .filter(b => b.payer_id !== useUserStore().user?.id && b.amount > 0)
+      .reduce((sum, b) => sum + b.amount, 0)
   )
 
   // Actions
@@ -97,9 +107,12 @@ export const useBillsStore = defineStore('bills', () => {
   function calculateStats() {
     const userStore = useUserStore()
     const userId = userStore.user?.id
-    
-    const totalAmount = bills.value.reduce((sum, b) => sum + b.amount, 0)
-    const myAmount = bills.value.filter(b => b.payer_id === userId).reduce((sum, b) => sum + b.amount, 0)
+
+    const expenseBills = bills.value.filter(b => b.amount > 0)
+    const totalAmount = expenseBills.reduce((sum, b) => sum + b.amount, 0)
+    const myAmount = expenseBills
+      .filter(b => b.payer_id === userId)
+      .reduce((sum, b) => sum + b.amount, 0)
     const partnerAmount = totalAmount - myAmount
     
     stats.value = {
@@ -229,6 +242,8 @@ export const useBillsStore = defineStore('bills', () => {
     stats,
     recentBills,
     totalExpenditure,
+    totalIncome,
+    netBalance,
     myExpenditure,
     partnerExpenditure,
     fetchBills,
