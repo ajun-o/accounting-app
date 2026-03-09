@@ -24,7 +24,7 @@ const router = useRouter();
 const userStore = useUserStore();
 const billsStore = useBillsStore();
 
-// 鐘舵€?
+// 状态
 const isPanelOpen = ref(false);
 const isVoicePanelOpen = ref(false);
 const newAmountStr = ref('0');
@@ -39,17 +39,17 @@ const selectedTransactionType = ref<'expense' | 'income'>('expense');
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
 
-// 鍒嗙被鏁版嵁
+// 分类数据
 const categories = [
-  { name: 'Food', icon: FireIcon, color: '#ff9f0a' },
-  { name: 'Shopping', icon: ShoppingBagIcon, color: '#bf5af2' },
-  { name: 'Transport', icon: TruckIcon, color: '#0a84ff' },
-  { name: 'Entertainment', icon: BuildingStorefrontIcon, color: '#30d158' },
+  { name: '餐饮', icon: FireIcon, color: '#ff9f0a' },
+  { name: '购物', icon: ShoppingBagIcon, color: '#bf5af2' },
+  { name: '交通', icon: TruckIcon, color: '#0a84ff' },
+  { name: '娱乐', icon: BuildingStorefrontIcon, color: '#30d158' },
 ];
-const incomeCategory = { name: 'Income', icon: WalletIcon, color: '#30d158' };
+const incomeCategory = { name: '收入', icon: WalletIcon, color: '#30d158' };
 const selectedCategory = ref(categories[0]);
 
-// 璁＄畻灞炴€?
+// 计算属性
 const user = computed(() => userStore.user);
 const partner = computed(() => userStore.partner);
 const couple = computed(() => userStore.couple);
@@ -83,9 +83,9 @@ const formattedAmount = computed(() =>
 
 const keypad = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'];
 
-// 鐢熷懡鍛ㄦ湡
+// 生命周期
 onMounted(async () => {
-  // 妫€鏌ュ畨瑁呮彁绀?
+  // 检查安装提示
   if (localStorage.getItem('installPromptDismissed') !== 'true') {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     if (!isStandalone) {
@@ -95,13 +95,13 @@ onMounted(async () => {
     }
   }
 
-  // 鍔犺浇璐﹀崟鏁版嵁
+  // 加载账单数据
   await billsStore.refresh();
   billsLoaded.value = true;
   displayTotalExpenditure.value = totalExpenditure.value;
 });
 
-// 鐩戝惉鎬婚鍙樺寲锛屾坊鍔犲姩鐢?
+// 监听总额变化，添加动画
 let animationFrame: number | null = null;
 watch(totalExpenditure, (newValue) => {
   if (animationFrame) cancelAnimationFrame(animationFrame);
@@ -126,7 +126,7 @@ watch(totalExpenditure, (newValue) => {
   animationFrame = requestAnimationFrame(animate);
 });
 
-// 鏂规硶
+// 方法
 function dismissInstallPrompt() {
   showInstallPrompt.value = false;
   localStorage.setItem('installPromptDismissed', 'true');
@@ -174,14 +174,14 @@ async function toggleRecording() {
 
     mediaRecorder.onstop = () => {
       const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-      console.log('褰曢煶瀹屾垚', audioBlob);
+      console.log('录音完成', audioBlob);
       isRecording.value = false;
       isVoicePanelOpen.value = false;
     };
 
     mediaRecorder.start();
   } catch (err) {
-    console.error('楹﹀厠椋庢潈闄愯幏鍙栧け璐?', err);
+    console.error('麦克风权限获取失败', err);
     isRecording.value = false;
   }
 }
@@ -238,7 +238,7 @@ async function handleTransactionSubmit() {
       });
     }
   } catch (error) {
-    console.error('淇濆瓨璐﹀崟澶辫触:', error);
+    console.error('保存账单失败:', error);
   }
 
   isSubmitting.value = false;
@@ -258,7 +258,7 @@ async function deleteBill(id: string) {
     await billsStore.deleteBill(id);
     openedMenuBillId.value = null;
   } catch (error) {
-    console.error('鍒犻櫎璐﹀崟澶辫触:', error);
+    console.error('删除账单失败:', error);
   }
 }
 
@@ -277,9 +277,9 @@ function formatDate(timestamp: string): string {
   const diff = now.getTime() - date.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-  if (days === 0) return '浠婂ぉ';
-  if (days === 1) return '鏄ㄥぉ';
-  if (days < 7) return `${days}澶╁墠`;
+  if (days === 0) return '今天';
+  if (days === 1) return '昨天';
+  if (days < 7) return `${days}天前`;
 
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 }
@@ -300,27 +300,27 @@ function formatSignedAmount(amount: number): string {
 
 <template>
   <div class="app-container">
-    <!-- 鑳屾櫙娓愬彉 -->
+    <!-- 背景渐变 -->
     <div class="ambient-bg">
       <div class="ambient-blob blob-1"></div>
       <div class="ambient-blob blob-2"></div>
       <div class="ambient-blob blob-3"></div>
     </div>
 
-    <!-- 涓诲唴瀹瑰尯 -->
+    <!-- 主内容区 -->
     <main class="main-content" :class="{ 'panel-open': isPanelOpen || isVoicePanelOpen }">
-      <!-- 椤堕儴鏍囬 -->
+      <!-- 顶部标题 -->
       <header class="page-header animate-ios-slide-up">
         <div class="header-left">
           <div class="header-icon">
             <WalletIcon class="w-6 h-6" />
           </div>
           <div class="header-info">
-            <h1 class="header-title">{{ couple?.name || '鍏卞悓璁拌处' }}</h1>
+            <h1 class="header-title">{{ couple?.name || '共同记账' }}</h1>
             <div class="header-users" v-if="user">
               <span class="user-badge me">{{ user.name }}</span>
               <span v-if="partner" class="user-badge partner">{{ partner.name }}</span>
-              <span v-else class="user-badge waiting">绛夊緟鍔犲叆</span>
+              <span v-else class="user-badge waiting">等待加入</span>
             </div>
           </div>
         </div>
@@ -329,21 +329,21 @@ function formatSignedAmount(amount: number): string {
         </button>
       </header>
 
-      <!-- 鎬绘敮鍑哄崱鐗?-->
+      <!-- 总支出卡片 -->
       <section class="total-card animate-ios-slide-up" style="animation-delay: 0.05s">
-        <div class="total-label">Monthly Expense</div>
+        <div class="total-label">本月总支出</div>
         <div class="total-amount">
-          <span class="currency">楼</span>
+          <span class="currency">¥</span>
           <span class="amount">{{ displayTotalExpenditure.toFixed(2) }}</span>
         </div>
         <div class="total-meta">
-          <span class="meta-income">Income +¥{{ totalIncome.toFixed(2) }}</span>
-          <span class="meta-balance">Balance ¥{{ netBalance.toFixed(2) }}</span>
+          <span class="meta-income">总收入 +¥{{ totalIncome.toFixed(2) }}</span>
+          <span class="meta-balance">结余 ¥{{ netBalance.toFixed(2) }}</span>
         </div>
         <div class="total-decoration"></div>
       </section>
 
-      <!-- 鏀嚭姣斾緥 -->
+      <!-- 支出比例 -->
       <section class="ratio-card animate-ios-slide-up" style="animation-delay: 0.1s">
         <div class="ratio-header">
           <div class="ratio-person" :class="{ active: myPercentage >= partnerPercentage }">
@@ -355,7 +355,7 @@ function formatSignedAmount(amount: number): string {
               <span class="person-percent">{{ myPercentage.toFixed(0) }}%</span>
             </div>
           </div>
-          <div class="ratio-divider">VS</div>
+          <div class="ratio-divider">对比</div>
           <div class="ratio-person" :class="{ active: partnerPercentage > myPercentage }">
             <div class="person-avatar" style="--avatar-color: #ff375f">
               <span>{{ partner?.name?.charAt(0) || '?' }}</span>
@@ -375,19 +375,19 @@ function formatSignedAmount(amount: number): string {
         </div>
 
         <div class="ratio-amounts">
-          <span class="amount-a">楼{{ myExpenditure.toFixed(2) }}</span>
-          <span class="amount-b">楼{{ partnerExpenditure.toFixed(2) }}</span>
+          <span class="amount-a">¥{{ myExpenditure.toFixed(2) }}</span>
+          <span class="amount-b">¥{{ partnerExpenditure.toFixed(2) }}</span>
         </div>
       </section>
 
-      <!-- 鏈€杩戣处鍗?-->
+      <!-- 最近账单 -->
       <section class="bills-section animate-ios-slide-up" style="animation-delay: 0.15s">
         <div class="section-header">
           <div class="section-title">
             <ChartPieIcon class="w-5 h-5" />
-            <span>Recent Bills</span>
+            <span>最近账单</span>
           </div>
-          <span class="bill-count">{{ recentBills.length }} items</span>
+          <span class="bill-count">{{ recentBills.length }} 笔</span>
         </div>
 
         <div class="bills-list" v-if="billsLoaded">
@@ -413,7 +413,7 @@ function formatSignedAmount(amount: number): string {
                 </div>
                 <div class="bill-meta">
                   <span class="bill-payer" :class="{ me: bill.is_my_bill, partner: !bill.is_my_bill }">
-                    {{ bill.is_my_bill ? 'Me' : (partner?.name || 'Partner') }} paid
+                    {{ bill.is_my_bill ? '我' : (partner?.name || '对方') }}支付
                   </span>
                   <span class="bill-date">{{ formatDate(bill.created_at) }}</span>
                 </div>
@@ -443,8 +443,8 @@ function formatSignedAmount(amount: number): string {
             <div class="empty-icon">
               <WalletIcon class="w-12 h-12" />
             </div>
-            <p class="empty-text">No bills yet</p>
-            <p class="empty-subtext">Tap the button to add your first record</p>
+            <p class="empty-text">还没有账单</p>
+            <p class="empty-subtext">点击右下角按钮添加第一笔记录</p>
           </div>
         </div>
 
@@ -460,7 +460,7 @@ function formatSignedAmount(amount: number): string {
       </section>
     </main>
 
-    <!-- 鎮诞鎸夐挳 -->
+    <!-- 悬浮按钮 -->
     <div class="fab-wrapper">
       <button
         class="fab"
@@ -474,10 +474,10 @@ function formatSignedAmount(amount: number): string {
           <PlusIcon class="w-8 h-8" />
         </div>
       </button>
-      <span class="fab-hint">闀挎寜璇煶</span>
+      <span class="fab-hint">长按语音</span>
     </div>
 
-    <!-- 璁拌处闈㈡澘 -->
+    <!-- 记账面板 -->
     <Transition name="panel">
       <div v-if="isPanelOpen" class="panel-overlay">
         <div class="panel-backdrop" @click="closePanel"></div>
@@ -487,11 +487,11 @@ function formatSignedAmount(amount: number): string {
           </div>
 
           <div class="amount-display">
-            <span class="amount-currency">楼</span>
+            <span class="amount-currency">¥</span>
             <span class="amount-value">{{ formattedAmount }}</span>
           </div>
 
-                    <div class="type-switch">
+          <div class="type-switch">
             <button
               class="type-btn"
               :class="{ active: selectedTransactionType === 'expense' }"
@@ -537,26 +537,26 @@ function formatSignedAmount(amount: number): string {
           </div>
 
           <button class="submit-btn" :disabled="isSubmitting" @click="handleTransactionSubmit">
-            <span v-if="!isSubmitting">{{ editingBill ? '淇濆瓨淇敼' : '纭璁拌处' }}</span>
+            <span v-if="!isSubmitting">{{ editingBill ? '保存修改' : '确认记账' }}</span>
             <span v-else class="spinner"></span>
           </button>
         </div>
       </div>
     </Transition>
 
-    <!-- 璇煶闈㈡澘 -->
+    <!-- 语音面板 -->
     <Transition name="voice">
       <div v-if="isVoicePanelOpen" class="voice-overlay">
         <div class="voice-backdrop" @click="isVoicePanelOpen = false"></div>
         <div class="voice-content">
-          <p class="voice-hint">{{ isRecording ? 'Listening...' : 'Tap to start recording' }}</p>
+          <p class="voice-hint">{{ isRecording ? '正在监听...' : '点击开始录音' }}</p>
           <button class="voice-btn" :class="{ recording: isRecording }" @click="toggleRecording">
             <div class="voice-btn-ring"></div>
             <div class="voice-btn-inner">
               <MicrophoneIcon class="w-10 h-10" />
             </div>
           </button>
-          <p class="voice-status">{{ isRecording ? '璇村嚭娑堣垂鍐呭' : '鍑嗗灏辩华' }}</p>
+          <p class="voice-status">{{ isRecording ? '说出消费内容' : '准备就绪' }}</p>
           <button class="voice-close" @click="isVoicePanelOpen = false">
             <XMarkIcon class="w-6 h-6" />
           </button>
@@ -1357,6 +1357,9 @@ function formatSignedAmount(amount: number): string {
   }
 }
 </style>
+
+
+
 
 
 
